@@ -1,0 +1,84 @@
+services:
+  deluge:
+    container_name: deluge
+    image: 'linuxserver/deluge:latest'
+    restart: unless-stopped
+    environment:
+      - 'PUID=${PUID}'
+      - 'PGID=${PGID}'
+      - 'TZ=${TZ}'
+    volumes:
+      - '${ROOT}/MediaCenter/config/deluge:/config'
+      - '${HDDSTORAGE}:/MediaCenterBox'
+    ports:
+      - '8112:8112'
+
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - 'TZ=${TZ}'
+    volumes:
+      - '${ROOT}/MediaCenter/config/prowlarr:/config'
+    restart: unless-stopped
+    network_mode: host
+    ports:
+      - '9696:9696' #uncomment if you are not using the VPN
+
+  sonarr:
+    container_name: sonarr
+    image: 'linuxserver/sonarr:latest'
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - 'PUID=${PUID}'
+      - 'PGID=${PGID}'
+      - 'TZ=${TZ}'
+    volumes:
+      - '/etc/localtime:/etc/localtime:ro'
+      - '${ROOT}/MediaCenter/config/sonarr:/config'
+      - '${HDDSTORAGE}:/MediaCenterBox'
+  radarr:
+    container_name: radarr
+    image: 'linuxserver/radarr:latest'
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - 'PUID=${PUID}'
+      - 'PGID=${PGID}'
+      - 'TZ=${TZ}'
+    volumes:
+      - '/etc/localtime:/etc/localtime:ro'
+      - '${ROOT}/MediaCenter/config/radarr:/config'
+      - '${HDDSTORAGE}:/MediaCenterBox'
+      
+  bazarr:
+    container_name: bazarr
+    image: 'linuxserver/bazarr:latest'
+    restart: unless-stopped
+    #network_mode: host
+    environment:
+      - 'PUID=${PUID}'
+      - 'PGID=${PGID}'
+      - 'TZ=${TZ}'
+      - UMASK_SET=022
+    volumes:
+      - '${ROOT}/MediaCenter/config/bazarr:/config'
+      - '${HDDSTORAGE}:/MediaCenterBox'
+    ports:
+      - '6767:6767'
+      
+  plex-server:
+    container_name: plex-server
+    image: 'plexinc/pms-docker:latest'
+    restart: unless-stopped
+    environment:
+      - 'TZ=${TZ}'
+    network_mode: host
+    volumes:
+      - '${ROOT}/MediaCenter/config/plex/db:/config'
+      - '${ROOT}/MediaCenter/config/plex/transcode:/transcode'
+      - '${HDDSTORAGE}/Completed:/MediaCenterBox'
+
