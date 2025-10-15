@@ -1,84 +1,116 @@
 services:
   deluge:
     container_name: deluge
-    image: 'linuxserver/deluge:latest'
+    image: lscr.io/linuxserver/deluge:latest
     restart: unless-stopped
     environment:
-      - 'PUID=${PUID}'
-      - 'PGID=${PGID}'
-      - 'TZ=${TZ}'
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
     volumes:
-      - '${ROOT}/MediaCenter/config/deluge:/config'
-      - '${HDDSTORAGE}:/MediaCenterBox'
+      - ${ROOT}/MediaCenter/config/deluge:/config
+      - ${HDDSTORAGE}:/MediaCenterBox
     ports:
-      - '8112:8112'
+      - 8112:8112
+    networks:
+      - arr-network
 
   prowlarr:
     image: lscr.io/linuxserver/prowlarr:latest
     container_name: prowlarr
     environment:
-      - PUID=1000
-      - PGID=1000
-      - 'TZ=${TZ}'
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
     volumes:
-      - '${ROOT}/MediaCenter/config/prowlarr:/config'
+      - ${ROOT}/MediaCenter/config/prowlarr:/config
     restart: unless-stopped
-    network_mode: host
     ports:
-      - '9696:9696' #uncomment if you are not using the VPN
+      - 9696:9696
+    networks:
+      - arr-network
 
   sonarr:
     container_name: sonarr
-    image: 'linuxserver/sonarr:latest'
+    image: lscr.io/linuxserver/sonarr:latest
     restart: unless-stopped
-    network_mode: host
     environment:
-      - 'PUID=${PUID}'
-      - 'PGID=${PGID}'
-      - 'TZ=${TZ}'
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
     volumes:
-      - '/etc/localtime:/etc/localtime:ro'
-      - '${ROOT}/MediaCenter/config/sonarr:/config'
-      - '${HDDSTORAGE}:/MediaCenterBox'
+      - /etc/localtime:/etc/localtime:ro
+      - ${ROOT}/MediaCenter/config/sonarr:/config
+      - ${HDDSTORAGE}:/MediaCenterBox
+    ports:
+      - 8989:8989
+    networks:
+      - arr-network
+
   radarr:
     container_name: radarr
-    image: 'linuxserver/radarr:latest'
+    image: lscr.io/linuxserver/radarr:latest
     restart: unless-stopped
-    network_mode: host
     environment:
-      - 'PUID=${PUID}'
-      - 'PGID=${PGID}'
-      - 'TZ=${TZ}'
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
     volumes:
-      - '/etc/localtime:/etc/localtime:ro'
-      - '${ROOT}/MediaCenter/config/radarr:/config'
-      - '${HDDSTORAGE}:/MediaCenterBox'
-      
+      - /etc/localtime:/etc/localtime:ro
+      - ${ROOT}/MediaCenter/config/radarr:/config
+      - ${HDDSTORAGE}:/MediaCenterBox
+    ports:
+      - 7878:7878
+    networks:
+      - arr-network
+
   bazarr:
     container_name: bazarr
-    image: 'linuxserver/bazarr:latest'
+    image: lscr.io/linuxserver/bazarr:latest
     restart: unless-stopped
-    #network_mode: host
     environment:
-      - 'PUID=${PUID}'
-      - 'PGID=${PGID}'
-      - 'TZ=${TZ}'
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
       - UMASK_SET=022
     volumes:
-      - '${ROOT}/MediaCenter/config/bazarr:/config'
-      - '${HDDSTORAGE}:/MediaCenterBox'
+      - ${ROOT}/MediaCenter/config/bazarr:/config
+      - ${HDDSTORAGE}:/MediaCenterBox
     ports:
-      - '6767:6767'
-      
-  plex-server:
-    container_name: plex-server
-    image: 'plexinc/pms-docker:latest'
+      - 6767:6767
+    networks:
+      - arr-network
+
+
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
     restart: unless-stopped
     environment:
-      - 'TZ=${TZ}'
-    network_mode: host
+      - TZ=${TZ}
+    ports:
+      - 8191:8191
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    networks:
+      - arr-network
+  
+  plex-server:
+    container_name: plex-server
+    image: plexinc/pms-docker:latest
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ}
+    ports:
+      - 32400:32400
     volumes:
-      - '${ROOT}/MediaCenter/config/plex/db:/config'
-      - '${ROOT}/MediaCenter/config/plex/transcode:/transcode'
-      - '${HDDSTORAGE}/Completed:/MediaCenterBox'
+      - ${ROOT}/MediaCenter/config/plex/db:/config
+      - ${ROOT}/MediaCenter/config/plex/transcode:/transcode
+      - ${HDDSTORAGE}/Completed:/MediaCenterBox
+    networks:
+      - arr-network
 
+networks:
+  arr-network:
+    driver: bridge
