@@ -1,116 +1,143 @@
+version: "3.9"
+name: media-stack
 services:
-  deluge:
-    container_name: deluge
-    image: lscr.io/linuxserver/deluge:latest
-    restart: unless-stopped
-    environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TZ=${TZ}
-    volumes:
-      - ${ROOT}/MediaCenter/config/deluge:/config
-      - ${HDDSTORAGE}:/MediaCenterBox
-    ports:
-      - 8112:8112
-    networks:
-      - arr-network
+  qbittorrent:
+    profiles: ["vpn", "no-vpn"]
+    container_name: qbittorrent
+    image: lscr.io/linuxserver/qbittorrent:5.1.2
 
-  prowlarr:
-    image: lscr.io/linuxserver/prowlarr:latest
-    container_name: prowlarr
-    environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TZ=${TZ}
-    volumes:
-      - ${ROOT}/MediaCenter/config/prowlarr:/config
-    restart: unless-stopped
-    ports:
-      - 9696:9696
-    networks:
-      - arr-network
+    networks:               # Comment this line if vpn is enabled
+      - mynetwork           # Comment this line if vpn is enabled
 
-  sonarr:
-    container_name: sonarr
-    image: lscr.io/linuxserver/sonarr:latest
-    restart: unless-stopped
     environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TZ=${TZ}
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+      - WEBUI_PORT=5080
     volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - ${ROOT}/MediaCenter/config/sonarr:/config
-      - ${HDDSTORAGE}:/MediaCenterBox
+      - qbittorrent-config:/config
+      - torrent-downloads:/downloads
+
     ports:
-      - 8989:8989
-    networks:
-      - arr-network
+      - 5080:5080
+      - 6881:6881
+      - 6881:6881/udp
+    restart: "unless-stopped"
 
   radarr:
+    profiles: ["vpn", "no-vpn"]
     container_name: radarr
-    image: lscr.io/linuxserver/radarr:latest
-    restart: unless-stopped
+    image: lscr.io/linuxserver/radarr:5.27.5
+    networks:
+      - mynetwork   # Comment this line if VPN is enabled
     environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TZ=${TZ}
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - ${ROOT}/MediaCenter/config/radarr:/config
-      - ${HDDSTORAGE}:/MediaCenterBox
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
     ports:
       - 7878:7878
-    networks:
-      - arr-network
-
-  bazarr:
-    container_name: bazarr
-    image: lscr.io/linuxserver/bazarr:latest
-    restart: unless-stopped
-    environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TZ=${TZ}
-      - UMASK_SET=022
     volumes:
-      - ${ROOT}/MediaCenter/config/bazarr:/config
-      - ${HDDSTORAGE}:/MediaCenterBox
-    ports:
-      - 6767:6767
+      - radarr-config:/config
+      - torrent-downloads:/downloads
+    restart: "unless-stopped"
+
+  sonarr:
+    profiles: ["vpn", "no-vpn"]
+    image: linuxserver/sonarr:4.0.15
+    container_name: sonarr
     networks:
-      - arr-network
-
-
-  flaresolverr:
-    image: ghcr.io/flaresolverr/flaresolverr:latest
-    container_name: flaresolverr
-    restart: unless-stopped
+      - mynetwork   # Comment this line if VPN is enabled
     environment:
-      - TZ=${TZ}
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+    volumes:
+      - sonarr-config:/config
+      - torrent-downloads:/downloads
+    ports:
+      - 8989:8989
+    restart: unless-stopped
+
+  prowlarr:
+    profiles: ["vpn", "no-vpn"]
+    container_name: prowlarr
+    image: linuxserver/prowlarr:2.0.5
+
+    networks:               # Comment this line if vpn is enabled
+      - mynetwork           # Comment this line if vpn is enabled
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+    volumes:
+      - prowlarr-config:/config
+
+    ports:
+      - 9696:9696
+    restart: unless-stopped
+  flaresolverr:
+    profiles: ["vpn", "no-vpn"]
+    container_name: flaresolverr
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+
+    networks:               # Comment this line if vpn is enabled
+      - mynetwork           # Comment this line if vpn is enabled
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - LOG_HTML=${LOG_HTML:-false}
+      - CAPTCHA_SOLVER=${CAPTCHA_SOLVER:-none}
+      - TZ=UTC
+
     ports:
       - 8191:8191
-    dns:
-      - 8.8.8.8
-      - 1.1.1.1
-    networks:
-      - arr-network
-  
-  plex-server:
-    container_name: plex-server
-    image: plexinc/pms-docker:latest
     restart: unless-stopped
-    environment:
-      - TZ=${TZ}
-    ports:
-      - 32400:32400
-    volumes:
-      - ${ROOT}/MediaCenter/config/plex/db:/config
-      - ${ROOT}/MediaCenter/config/plex/transcode:/transcode
-      - ${HDDSTORAGE}/Completed:/MediaCenterBox
+
+  jellyseerr:
+    profiles: ["vpn", "no-vpn"]
+    image: fallenbagel/jellyseerr:2.7.3
+    container_name: jellyseerr
     networks:
-      - arr-network
+      - mynetwork
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+    volumes:
+      - jellyseerr-config:/app/config
+    ports:
+      - 5055:5055
+    restart: unless-stopped
+
+  jellyfin:
+    profiles: ["vpn", "no-vpn"]
+    image: linuxserver/jellyfin:10.10.7
+    container_name: jellyfin
+    networks:
+      - mynetwork
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+    volumes:
+      - jellyfin-config:/config
+      - torrent-downloads:/data
+  # devices:
+   #  - /dev/videoN:/dev/videoN # Mount GPU device 
+    ports:
+      - 8096:8096
+      - 7359:7359/udp
+      - 8920:8920
+    restart: unless-stopped
+  
+volumes:
+  torrent-downloads:
+  radarr-config:
+  sonarr-config:
+  prowlarr-config:
+  jellyfin-config:
+  qbittorrent-config:
+  jellyseerr-config:
 
 networks:
-  arr-network:
-    driver: bridge
+  mynetwork:
+    external: true
