@@ -1,14 +1,29 @@
 version: "3.9"
 name: media-stack
 services:
+
+  homarr:
+    container_name: homarr
+    image: ghcr.io/ajnart/homarr:latest
+    networks:
+      - mynetwork
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+    volumes:
+      - homarr-config:/app/data/configs
+      - homarr-icons:/app/public/icons
+      - homarr-data:/data
+    ports:
+      - 7575:7575
+    restart: unless-stopped
+
   qbittorrent:
-    profiles: ["vpn", "no-vpn"]
     container_name: qbittorrent
     image: lscr.io/linuxserver/qbittorrent:5.1.2
-
-    networks:               # Comment this line if vpn is enabled
-      - mynetwork           # Comment this line if vpn is enabled
-
+    networks:
+      - mynetwork
     environment:
       - PUID=1000
       - PGID=1000
@@ -17,19 +32,17 @@ services:
     volumes:
       - qbittorrent-config:/config
       - torrent-downloads:/downloads
-
     ports:
       - 5080:5080
       - 6881:6881
       - 6881:6881/udp
-    restart: "unless-stopped"
+    restart: unless-stopped
 
   radarr:
-    profiles: ["vpn", "no-vpn"]
     container_name: radarr
     image: lscr.io/linuxserver/radarr:5.27.5
     networks:
-      - mynetwork   # Comment this line if VPN is enabled
+      - mynetwork
     environment:
       - PUID=1000
       - PGID=1000
@@ -39,14 +52,13 @@ services:
     volumes:
       - radarr-config:/config
       - torrent-downloads:/downloads
-    restart: "unless-stopped"
+    restart: unless-stopped
 
   sonarr:
-    profiles: ["vpn", "no-vpn"]
     image: linuxserver/sonarr:4.0.15
     container_name: sonarr
     networks:
-      - mynetwork   # Comment this line if VPN is enabled
+      - mynetwork
     environment:
       - PUID=1000
       - PGID=1000
@@ -59,41 +71,35 @@ services:
     restart: unless-stopped
 
   prowlarr:
-    profiles: ["vpn", "no-vpn"]
     container_name: prowlarr
     image: linuxserver/prowlarr:2.0.5
-
-    networks:               # Comment this line if vpn is enabled
-      - mynetwork           # Comment this line if vpn is enabled
+    networks:
+      - mynetwork
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=UTC
     volumes:
       - prowlarr-config:/config
-
     ports:
       - 9696:9696
     restart: unless-stopped
+
   flaresolverr:
-    profiles: ["vpn", "no-vpn"]
     container_name: flaresolverr
     image: ghcr.io/flaresolverr/flaresolverr:latest
-
-    networks:               # Comment this line if vpn is enabled
-      - mynetwork           # Comment this line if vpn is enabled
+    networks:
+      - mynetwork
     environment:
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - LOG_HTML=${LOG_HTML:-false}
       - CAPTCHA_SOLVER=${CAPTCHA_SOLVER:-none}
       - TZ=UTC
-
     ports:
       - 8191:8191
     restart: unless-stopped
 
   jellyseerr:
-    profiles: ["vpn", "no-vpn"]
     image: fallenbagel/jellyseerr:2.7.3
     container_name: jellyseerr
     networks:
@@ -109,7 +115,6 @@ services:
     restart: unless-stopped
 
   jellyfin:
-    profiles: ["vpn", "no-vpn"]
     image: linuxserver/jellyfin:10.10.7
     container_name: jellyfin
     networks:
@@ -121,14 +126,12 @@ services:
     volumes:
       - jellyfin-config:/config
       - torrent-downloads:/data
-  # devices:
-   #  - /dev/videoN:/dev/videoN # Mount GPU device 
     ports:
       - 8096:8096
       - 7359:7359/udp
       - 8920:8920
     restart: unless-stopped
-  
+
 volumes:
   torrent-downloads:
   radarr-config:
@@ -137,6 +140,9 @@ volumes:
   jellyfin-config:
   qbittorrent-config:
   jellyseerr-config:
+  homarr-config:
+  homarr-icons:
+  homarr-data:
 
 networks:
   mynetwork:
