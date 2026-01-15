@@ -1,0 +1,35 @@
+services:
+  liora:
+    image: docker.io/jannchie/liora:latest
+    build: .
+    container_name: liora
+    ports:
+      - '3040:3040'
+    environment:
+      S3_ENDPOINT: 'http://minio:9000'
+      S3_BUCKET: 'liora'
+      S3_ACCESS_KEY_ID: 'minioadmin'
+      S3_SECRET_ACCESS_KEY: 'minioadmin'
+      ADMIN_USERNAME: ''
+      ADMIN_PASSWORD: ''
+      ADMIN_SESSION_SECRET: ''
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
+
+volumes:
+  minio_data:
